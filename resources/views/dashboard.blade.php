@@ -8,6 +8,7 @@
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700&display=swap" rel="stylesheet" />
         @vite(['resources/css/app.css', 'resources/js/app.js'])
+        <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     </head>
     <body class="font-sans antialiased h-full bg-gray-100 dark:bg-gray-950 text-gray-900 dark:text-gray-100">
         @php
@@ -549,6 +550,8 @@
             cart: [],
             isSubmitting: false,
             showReceiptModal: false,
+            showPaymentModal: false,
+            selectedPayment: '',
             errorMessage: '',
             lastOrderReceipt: null,
             products: [
@@ -598,12 +601,14 @@
                 });
             },
             async checkout() {
-                if (this.cart.length === 0 || this.isSubmitting) return;
+                if (this.cart.length === 0 || this.isSubmitting || !this.selectedPayment) return;
                 this.isSubmitting = true;
                 this.errorMessage = '';
+                this.showPaymentModal = false;
 
                 const payload = {
-                    items: this.cart.map(i => ({ product_id: i.id, quantity: i.quantity }))
+                    items: this.cart.map(i => ({ product_id: i.id, quantity: i.quantity })),
+                    payment_method: this.selectedPayment
                 };
 
                 try {
@@ -622,6 +627,7 @@
                     if (res.ok && data.success) {
                         this.lastOrderReceipt = data;
                         this.cart = [];
+                        this.selectedPayment = '';
                         this.showReceiptModal = true;
                     } else {
                         this.errorMessage = data.message || 'Something went wrong. Please try again.';
@@ -631,6 +637,39 @@
                 } finally {
                     this.isSubmitting = false;
                 }
+            },
+            paymentQRData: {
+                online: 'https://pay.coffeeshop.com/checkout',
+            },
+            init() {
+                this.$watch('selectedPayment', (val) => {
+                    if (val && val !== 'physical') {
+                        this.$nextTick(() => this.generateQR(val));
+                    }
+                });
+            },
+            generateQR(method) {
+                const el = document.getElementById('qr-payment-box');
+                if (!el) return;
+                el.innerHTML = '';
+                const data = this.paymentQRData[method];
+                if (!data) return;
+                const qrText = data + '?amount=' + parseFloat(this.total).toFixed(2);
+                new QRCode(el, {
+                    text: qrText,
+                    width: 180,
+                    height: 180,
+                    colorDark: '#1f2937',
+                    colorLight: '#ffffff',
+                    correctLevel: QRCode.CorrectLevel.H,
+                });
+            },
+            paymentLabel(method) {
+                const labels = {
+                    physical: 'Cash Payment',
+                    online:   'Online Payment',
+                };
+                return labels[method] || method;
             }
         }">
 
@@ -785,13 +824,13 @@
                             <span class="text-amber-600 dark:text-amber-400" x-text="'$' + parseFloat(total).toFixed(2)">$0.00</span>
                         </div>
 
-                        <button @click="checkout"
+                        <button @click="if (cart.length > 0 && !isSubmitting) { showPaymentModal = true; }"
                                 :disabled="cart.length === 0 || isSubmitting"
                                 :class="cart.length === 0 || isSubmitting ? 'bg-gray-300 dark:bg-gray-800 text-gray-400 cursor-not-allowed' : 'bg-amber-500 hover:bg-amber-600 text-white shadow-lg shadow-amber-500/20 active:scale-[0.98]'"
                                 class="w-full mt-1 font-bold py-3 rounded-xl text-sm transition-all flex items-center justify-center space-x-2">
                             <template x-if="!isSubmitting">
                                 <span class="flex items-center space-x-2">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
                                     <span>Place Order & Print</span>
                                 </span>
                             </template>
@@ -801,6 +840,111 @@
                                     <span>Processing...</span>
                                 </span>
                             </template>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Payment Method Modal --}}
+            <div x-show="showPaymentModal" x-cloak
+                 class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-60">
+                <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl p-6 max-w-sm w-full shadow-2xl max-h-[90vh] overflow-y-auto" @click.away="showPaymentModal = false">
+
+                    {{-- Header --}}
+                    <div class="text-center pb-4 border-b border-dashed border-gray-200 dark:border-gray-700 mb-5">
+                        <div class="w-12 h-12 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center mx-auto mb-2.5">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3-3V8a3 3 0 003 3z"/></svg>
+                        </div>
+                        <h3 class="font-extrabold text-gray-800 dark:text-white text-base">Select Payment Method</h3>
+                        <p class="text-[10px] text-gray-400 mt-0.5">Choose how the customer will pay</p>
+                    </div>
+
+                    {{-- Payment Options --}}
+                    <div class="space-y-3 mb-5">
+
+                        {{-- Section: Physical --}}
+                        <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1">Physical Payment</p>
+                        <button @click="selectedPayment = 'physical'"
+                                :class="selectedPayment === 'physical' ? 'ring-2 ring-amber-500 bg-amber-50 dark:bg-amber-900/20 border-amber-400' : 'border-gray-200 dark:border-gray-700 hover:border-amber-400'"
+                                class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl border transition-all text-left">
+                            <div class="w-9 h-9 rounded-xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center shrink-0">
+                                <svg class="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
+                                </svg>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-sm font-bold text-gray-800 dark:text-white">Cash</p>
+                                <p class="text-[10px] text-gray-400">Physical cash payment</p>
+                            </div>
+                            <div x-show="selectedPayment === 'physical'" class="w-5 h-5 rounded-full bg-amber-500 flex items-center justify-center">
+                                <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+                            </div>
+                        </button>
+
+                        {{-- Section: Online --}}
+                        <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400 mt-4 mb-1">Online / E-Wallet</p>
+
+                        {{-- Online Payment (QR Code) --}}
+                        <button @click="selectedPayment = 'online'"
+                                :class="selectedPayment === 'online' ? 'ring-2 ring-blue-500 bg-blue-50 dark:bg-blue-900/20 border-blue-400' : 'border-gray-200 dark:border-gray-700 hover:border-blue-400'"
+                                class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl border transition-all text-left">
+                            <div class="w-9 h-9 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center shrink-0">
+                                <svg class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/>
+                                </svg>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-sm font-bold text-gray-800 dark:text-white">Online Payment</p>
+                                <p class="text-[10px] text-gray-400">GCash, Maya, Maribank &amp; more — scan QR</p>
+                            </div>
+                            <div x-show="selectedPayment === 'online'" class="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center">
+                                <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+                            </div>
+                        </button>
+
+                    </div>
+
+                    {{-- QR Code Panel (online only) --}}
+                    <div x-show="selectedPayment === 'online'"
+                         x-effect="if (selectedPayment === 'online') { $nextTick(() => generateQR(selectedPayment)); }"
+                         class="mb-5 rounded-2xl border border-dashed border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30 p-4 text-center">
+
+                        {{-- Header --}}
+                        <div class="flex items-center justify-center space-x-2 mb-3">
+                            <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
+                            <span class="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest">Scan QR to Pay</span>
+                        </div>
+
+                        {{-- QR code rendered here by qrcodejs --}}
+                        <div id="qr-payment-box" class="flex justify-center items-center min-h-[184px]"></div>
+
+                        {{-- Amount label --}}
+                        <p class="mt-3 text-xs text-gray-400">
+                            Amount to pay:
+                            <span class="font-extrabold text-amber-600 dark:text-amber-400"
+                                  x-text="'$' + parseFloat(total).toFixed(2)">$0.00</span>
+                        </p>
+                        <p class="text-[10px] text-gray-300 dark:text-gray-600 mt-1">Show QR to customer — click Confirm after payment</p>
+                    </div>
+
+                    {{-- Order total reminder --}}
+                    <div class="flex justify-between items-center text-sm font-bold border-t border-dashed border-gray-200 dark:border-gray-700 pt-4 mb-4">
+                        <span class="text-gray-500">Total to Collect</span>
+                        <span class="text-amber-600 dark:text-amber-400 text-base" x-text="'$' + parseFloat(total).toFixed(2)">$0.00</span>
+                    </div>
+
+                    {{-- Action buttons --}}
+                    <div class="flex space-x-3">
+                        <button @click="showPaymentModal = false; selectedPayment = ''"
+                                class="flex-1 py-3 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 text-sm font-semibold hover:bg-gray-50 dark:hover:bg-gray-800 transition">
+                            Cancel
+                        </button>
+                        <button @click="checkout()"
+                                :disabled="!selectedPayment"
+                                :class="!selectedPayment ? 'bg-gray-300 dark:bg-gray-800 text-gray-400 cursor-not-allowed' : 'bg-amber-500 hover:bg-amber-600 text-white shadow-lg shadow-amber-500/20 active:scale-[0.98]'"
+                                class="flex-1 py-3 rounded-xl text-sm font-bold transition-all flex items-center justify-center space-x-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            <span>Confirm & Print</span>
                         </button>
                     </div>
                 </div>
@@ -826,6 +970,15 @@
                         <div class="flex justify-between">
                             <span class="text-gray-400">Cashier</span>
                             <span class="font-medium">{{ Auth::user()->name }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Payment</span>
+                            <span class="font-bold capitalize"
+                                  :class="{
+                                      'text-green-600 dark:text-green-400': lastOrderReceipt?.payment_method === 'physical',
+                                      'text-blue-600 dark:text-blue-400':   lastOrderReceipt?.payment_method === 'online',
+                                  }"
+                                  x-text="paymentLabel(lastOrderReceipt?.payment_method)"></span>
                         </div>
 
                         <div class="border-t border-dashed border-gray-200 dark:border-gray-700 pt-3 mt-2 space-y-1.5">
