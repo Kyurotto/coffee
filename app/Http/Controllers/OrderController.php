@@ -22,6 +22,7 @@ class OrderController extends Controller
             'items'              => 'required|array|min:1',
             'items.*.product_id' => 'required|integer|exists:products,id',
             'items.*.quantity'   => 'required|integer|min:1',
+            'payment_method'     => 'required|string|in:physical,online',
         ]);
 
         DB::beginTransaction();
@@ -50,12 +51,13 @@ class OrderController extends Controller
 
             // Create the parent order
             $order = Order::create([
-                'user_id'    => Auth::id(),
-                'receipt_no' => 'REC-' . strtoupper(Str::random(8)),
-                'subtotal'   => $subtotal,
-                'tax'        => $tax,
-                'total'      => $total,
-                'status'     => 'completed',
+                'user_id'        => Auth::id(),
+                'receipt_no'     => 'REC-' . strtoupper(Str::random(8)),
+                'subtotal'       => $subtotal,
+                'tax'            => $tax,
+                'total'          => $total,
+                'status'         => 'completed',
+                'payment_method' => $validated['payment_method'],
             ]);
 
             // Create each order item
@@ -67,12 +69,13 @@ class OrderController extends Controller
 
             // Return the saved order with its items for the receipt modal
             return response()->json([
-                'success'    => true,
-                'receipt_no' => $order->receipt_no,
-                'subtotal'   => number_format($order->subtotal, 2),
-                'tax'        => number_format($order->tax, 2),
-                'total'      => number_format($order->total, 2),
-                'items'      => $order->items->map(fn($i) => [
+                'success'        => true,
+                'receipt_no'     => $order->receipt_no,
+                'subtotal'       => number_format($order->subtotal, 2),
+                'tax'            => number_format($order->tax, 2),
+                'total'          => number_format($order->total, 2),
+                'payment_method' => $order->payment_method,
+                'items'          => $order->items->map(fn($i) => [
                     'name'     => $i->product_name,
                     'quantity' => $i->quantity,
                     'price'    => number_format($i->unit_price, 2),
