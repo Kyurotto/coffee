@@ -208,7 +208,7 @@
                         </div>
                         <p class="text-xs text-gray-500 dark:text-gray-400 line-clamp-2" x-text="product.description"></p>
                     </div>
-                    <div class="pt-3 border-t border-gray-100 dark:border-gray-800 mt-3"
+<div class="pt-3 border-t border-gray-100 dark:border-gray-800 mt-3"
                          x-data="{
                             inputVal: stocks[product.id] ?? stocks[String(product.id)] ?? 0,
                             saved: false,
@@ -241,6 +241,7 @@
                                 </button>
                             </div>
                         </div>
+                    </div>
                     </div>
                 </div>
             </div>
