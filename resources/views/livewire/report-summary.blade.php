@@ -1,6 +1,30 @@
 <div x-data class="space-y-6">
+    <style>
+        @media print {
+            body {
+                background-color: white !important;
+                color: black !important;
+            }
+            .dark\:bg-gray-900, .dark\:bg-gray-800, .dark\:text-white, .dark\:text-gray-300, .dark\:border-gray-800, .dark\:border-gray-700 {
+                background-color: white !important;
+                color: black !important;
+                border-color: #e5e7eb !important;
+            }
+            .shadow-sm {
+                box-shadow: none !important;
+            }
+            .border {
+                border-color: #e5e7eb !important;
+            }
+            canvas {
+                max-width: 100% !important;
+                height: auto !important;
+            }
+        }
+    </style>
+
     <!-- Filters -->
-    <div class="bg-white dark:bg-gray-900 p-4 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm flex flex-wrap gap-4 items-end">
+    <div class="bg-white dark:bg-gray-900 p-4 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm flex flex-wrap gap-4 items-end print:hidden">
         <div>
             <label class="block text-xs font-medium text-gray-500 mb-1">Month</label>
             <select wire:model.live="selectedMonth" class="bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2 pr-8">
@@ -78,8 +102,11 @@
     <div id="chartData" data-chart='@json($categoryRevenue)' style="display:none;"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
     <script>
         (function () {
+            Chart.register(ChartDataLabels);
+
             var colors = [
                 '#10B981', '#8B5CF6', '#F59E0B', '#3B82F6', '#EF4444',
                 '#6366F1', '#EC4899', '#14B8A6', '#F97316', '#A855F7'
@@ -115,6 +142,22 @@
                                 position: 'bottom',
                                 labels: {
                                     color: document.documentElement.classList.contains('dark') ? '#fff' : '#666'
+                                }
+                            },
+                            datalabels: {
+                                formatter: (value, ctx) => {
+                                    let sum = 0;
+                                    let dataArr = ctx.chart.data.datasets[0].data;
+                                    dataArr.map(data => {
+                                        sum += data;
+                                    });
+                                    let percentage = (value * 100 / sum).toFixed(1) + "%";
+                                    return percentage;
+                                },
+                                color: '#fff',
+                                font: {
+                                    weight: 'bold',
+                                    size: 12
                                 }
                             }
                         }
