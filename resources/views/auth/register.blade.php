@@ -4,13 +4,11 @@
 
             {{-- Brand Header --}}
             <div class="text-center space-y-4">
-                <div class="inline-flex items-center justify-center w-16 h-16 bg-amber-500 rounded-2xl text-white shadow-lg shadow-amber-500/30 mb-2">
-                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m0-12.728l.707.707m11.314 11.314l.707-.707M12 5a7 7 0 100 14 7 7 0 000-14z"/>
-                    </svg>
+                <div class="inline-flex items-center justify-center w-24 h-24 rounded-full overflow-hidden border-2 border-yellow-400 shadow-lg mb-2">
+                    <img src="{{ asset('images/logo.png') }}" class="w-full h-full object-cover" alt="Coffee Shop Logo">
                 </div>
-                <div class="text-left">
-                    <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Coffee Admin</h2>
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Coffee Shop POS</h2>
                     <p class="text-sm text-gray-500 dark:text-gray-400">Create your account to get started</p>
                 </div>
             </div>
@@ -22,7 +20,7 @@
                 <div>
                     <label for="name" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">{{ __('Name') }}</label>
                     <input id="name" type="text" name="name" value="{{ old('name') }}" required autofocus autocomplete="name"
-                        class="w-full px-4 py-2.5 text-sm bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition"
+                        class="w-full px-4 py-2.5 text-sm bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent transition"
                         placeholder="Your full name">
                     <x-input-error :messages="$errors->get('name')" class="mt-2" />
                 </div>
@@ -31,7 +29,7 @@
                 <div>
                     <label for="email" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">{{ __('Email Address') }}</label>
                     <input id="email" type="email" name="email" value="{{ old('email') }}" required autocomplete="username"
-                        class="w-full px-4 py-2.5 text-sm bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition"
+                        class="w-full px-4 py-2.5 text-sm bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent transition"
                         placeholder="name@example.com">
                     <x-input-error :messages="$errors->get('email')" class="mt-2" />
                 </div>
@@ -40,7 +38,7 @@
                 <div>
                     <label for="password" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">{{ __('Password') }}</label>
                     <input id="password" type="password" name="password" required autocomplete="new-password"
-                        class="w-full px-4 py-2.5 text-sm bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition"
+                        class="w-full px-4 py-2.5 text-sm bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent transition"
                         placeholder="••••••••">
                     <x-input-error :messages="$errors->get('password')" class="mt-2" />
                 </div>
@@ -49,14 +47,14 @@
                 <div>
                     <label for="password_confirmation" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">{{ __('Confirm Password') }}</label>
                     <input id="password_confirmation" type="password" name="password_confirmation" required autocomplete="new-password"
-                        class="w-full px-4 py-2.5 text-sm bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition"
+                        class="w-full px-4 py-2.5 text-sm bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent transition"
                         placeholder="••••••••">
                     <x-input-error :messages="$errors->get('password_confirmation')" class="mt-2" />
                 </div>
 
                 {{-- Submit Button --}}
                 <div class="space-y-3">
-                    <button type="submit" class="w-full py-3 px-4 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl shadow-lg shadow-amber-500/25 transition-all active:scale-[0.98] flex items-center justify-center">
+                    <button type="submit" class="w-full py-3 px-4 bg-yellow-400 hover:bg-yellow-500 text-red-950 font-bold rounded-xl shadow-lg shadow-yellow-400/25 transition-all active:scale-[0.98] flex items-center justify-center">
                         {{ __('Register') }}
                     </button>
                     <a href="{{ route('login') }}" class="w-full py-3 px-4 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-bold rounded-xl border border-gray-200 dark:border-gray-700 transition-all active:scale-[0.98] flex items-center justify-center">
