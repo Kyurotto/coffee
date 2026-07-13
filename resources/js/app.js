@@ -1,7 +1,5 @@
 
 
-import Alpine from 'alpinejs';
+// Livewire automatically bundles and initializes AlpineJS.
+// Manual registration is removed here to prevent script conflict.
 
-window.Alpine = Alpine;
-
-Alpine.start();
