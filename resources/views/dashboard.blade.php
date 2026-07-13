@@ -83,7 +83,7 @@
         }">
 
             {{-- Mobile top bar --}}
-            <header class="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-6 py-4 md:hidden shrink-0">
+            <header class="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-6 py-4 md:hidden shrink-0 print:hidden">
                 <div class="flex items-center space-x-2">
                     <div class="bg-amber-500 p-1.5 rounded-lg text-white">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -105,7 +105,7 @@
 
             {{-- Sidebar --}}
             <aside :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'"
-                   class="fixed md:static inset-y-0 left-0 z-30 w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col transition-transform duration-300 ease-in-out shrink-0 h-full">
+                   class="fixed md:static inset-y-0 left-0 z-30 w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col transition-transform duration-300 ease-in-out shrink-0 h-full print:hidden">
                 <div class="p-6 border-b border-gray-100 dark:border-gray-800 hidden md:block">
                     <div class="flex items-center space-x-3">
                         <div class="bg-amber-500 p-2 rounded-lg text-white">
