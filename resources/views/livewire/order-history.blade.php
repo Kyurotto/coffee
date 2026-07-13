@@ -44,7 +44,7 @@
                     </thead>
                     <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
                         @foreach($orders as $order)
-                            <tr class="hover:bg-gray-50/60 dark:hover:bg-gray-800/30 transition">
+                            <tr wire:key="order-{{ $order->id }}" class="hover:bg-gray-50/60 dark:hover:bg-gray-800/30 transition">
                                 <td class="px-6 py-3 font-mono text-xs font-bold text-gray-700 dark:text-gray-300">{{ $order->receipt_no }}</td>
                                 <td class="px-6 py-3 text-gray-700 dark:text-gray-300">{{ $order->user->name ?? 'Unknown' }}</td>
                                 <td class="px-6 py-3 text-gray-500 text-xs max-w-xs truncate">
