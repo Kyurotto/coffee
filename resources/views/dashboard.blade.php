@@ -9,6 +9,9 @@
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700&display=swap" rel="stylesheet" />
         @vite(['resources/css/app.css', 'resources/js/app.js'])
         <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+
+        @livewireStyles
+
     </head>
     <body class="font-sans antialiased h-full bg-gray-100 dark:bg-gray-950 text-gray-900 dark:text-gray-100">
         @php
@@ -25,12 +28,12 @@
             searchQuery: '',
             categoryFilter: 'all',
 
-            // Live order stats (start with server-rendered values, poll for updates)
+            // Live order stats — start with server-rendered values;
+            // updated by Livewire's stats-refreshed browser event
             totalOrders:  {{ $totalOrders ?? 0 }},
             totalRevenue: '{{ number_format($totalRevenue ?? 0, 2) }}',
             todayRevenue: '{{ number_format($todayRevenue ?? 0, 2) }}',
             todayOrders:  {{ $todayOrders ?? 0 }},
-            recentOrders: [],
 
             stocks: {
                 @foreach($allProducts as $product)
@@ -42,25 +45,16 @@
                 this.stocks[id] = Math.max(0, this.stocks[id] + amount);
             },
 
-            // Poll the summary endpoint every 15 seconds so any device sees live totals
-            async pollSummary() {
-                try {
-                    const res  = await fetch('{{ route('orders.summary') }}', {
-                        headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content }
-                    });
-                    if (!res.ok) return;
-                    const data = await res.json();
-                    this.totalOrders  = data.total_orders;
-                    this.totalRevenue = data.total_revenue;
-                    this.todayRevenue = data.today_revenue;
-                    this.todayOrders  = data.today_orders;
-                    this.recentOrders = data.recent_orders;
-                } catch (e) {}
-            },
-
+            // Livewire broadcasts stats-refreshed after each poll so the sidebar
+            // badge and Reports tab stay in sync without a separate fetch call
             init() {
-                this.pollSummary();
-                setInterval(() => this.pollSummary(), 15000);
+                window.addEventListener('stats-refreshed', (e) => {
+                    const d = e.detail || {};
+                    if (d.totalOrders  !== undefined) this.totalOrders  = d.totalOrders;
+                    if (d.totalRevenue !== undefined) this.totalRevenue = d.totalRevenue;
+                    if (d.todayRevenue !== undefined) this.todayRevenue = d.todayRevenue;
+                    if (d.todayOrders  !== undefined) this.todayOrders  = d.todayOrders;
+                });
             },
 
             get filteredProducts() {
@@ -175,368 +169,15 @@
             <main class="flex-1 h-full overflow-y-auto bg-gray-50 dark:bg-gray-950">
                 <div class="p-4 md:p-8 space-y-6">
 
-                    {{-- ---- TAB: DASHBOARD ---- --}}
-                    <div x-show="activeTab === 'dashboard'" x-cloak class="space-y-6">
-                        <div class="flex flex-wrap justify-between items-center gap-3">
-                            <div>
-                                <h1 class="text-2xl font-bold text-gray-800 dark:text-white">Dashboard Overview</h1>
-                                <p class="text-xs text-gray-500 mt-0.5">Live stats — refreshes every 15 seconds</p>
-                            </div>
-                            <span class="text-xs text-gray-500 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 px-3 py-1.5 rounded-xl font-medium">{{ now()->format('F d, Y') }}</span>
-                        </div>
+                    @include('admin.partials.tab-dashboard')
 
-                        {{-- Stat cards --}}
-                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                            {{-- Total Products --}}
-                            <div class="bg-white dark:bg-gray-900 p-5 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800/80 flex items-center justify-between">
-                                <div>
-                                    <p class="text-xs text-gray-500 font-medium uppercase tracking-wider">Total Products</p>
-                                    <h3 class="text-3xl font-extrabold text-gray-800 dark:text-white mt-1">{{ $allProducts->count() }}</h3>
-                                </div>
-                                <div class="bg-blue-500/10 p-3 rounded-xl text-blue-600 dark:text-blue-400">
-                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
-                                </div>
-                            </div>
-                            {{-- Today's Orders --}}
-                            <div class="bg-white dark:bg-gray-900 p-5 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800/80 flex items-center justify-between">
-                                <div>
-                                    <p class="text-xs text-gray-500 font-medium uppercase tracking-wider">Today's Orders</p>
-                                    <h3 class="text-3xl font-extrabold text-amber-600 dark:text-amber-400 mt-1" x-text="todayOrders">{{ $todayOrders }}</h3>
-                                </div>
-                                <div class="bg-amber-500/10 p-3 rounded-xl text-amber-600 dark:text-amber-400">
-                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
-                                </div>
-                            </div>
-                            {{-- Today's Revenue --}}
-                            <div class="bg-white dark:bg-gray-900 p-5 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800/80 flex items-center justify-between">
-                                <div>
-                                    <p class="text-xs text-gray-500 font-medium uppercase tracking-wider">Today's Revenue</p>
-                                    <h3 class="text-3xl font-extrabold text-green-600 dark:text-green-400 mt-1" x-text="'$' + todayRevenue">${{ number_format($todayRevenue, 2) }}</h3>
-                                </div>
-                                <div class="bg-green-500/10 p-3 rounded-xl text-green-600 dark:text-green-400">
-                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M12 16V5"/></svg>
-                                </div>
-                            </div>
-                            {{-- Total Revenue All-Time --}}
-                            <div class="bg-white dark:bg-gray-900 p-5 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800/80 flex items-center justify-between">
-                                <div>
-                                    <p class="text-xs text-gray-500 font-medium uppercase tracking-wider">All-Time Revenue</p>
-                                    <h3 class="text-3xl font-extrabold text-purple-600 dark:text-purple-400 mt-1" x-text="'$' + totalRevenue">${{ number_format($totalRevenue, 2) }}</h3>
-                                </div>
-                                <div class="bg-purple-500/10 p-3 rounded-xl text-purple-600 dark:text-purple-400">
-                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
-                                </div>
-                            </div>
-                        </div>
+                    @include('admin.partials.tab-orders')
 
-                        {{-- Recent orders live feed + quick activities --}}
-                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                            {{-- Live recent orders --}}
-                            <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800/80 lg:col-span-2 overflow-hidden">
-                                <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
-                                    <h3 class="font-bold text-gray-800 dark:text-white">Recent Orders</h3>
-                                    <span class="flex items-center space-x-1.5 text-[10px] text-green-600 font-semibold">
-                                        <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse inline-block"></span>
-                                        <span>Live</span>
-                                    </span>
-                                </div>
+                    @include('admin.partials.tab-products')
 
-                                {{-- Empty state --}}
-                                <template x-if="recentOrders.length === 0">
-                                    <div class="flex flex-col items-center justify-center py-12 text-gray-400">
-                                        <svg class="w-10 h-10 mb-3 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
-                                        <p class="text-sm">No orders yet today</p>
-                                    </div>
-                                </template>
+                    @include('admin.partials.tab-stocks')
 
-                                <div class="divide-y divide-gray-100 dark:divide-gray-800">
-                                    <template x-for="order in recentOrders" :key="order.id">
-                                        <div class="px-6 py-3.5 flex items-center justify-between hover:bg-gray-50/60 dark:hover:bg-gray-800/30 transition">
-                                            <div class="flex-1 min-w-0">
-                                                <div class="flex items-center space-x-2">
-                                                    <span class="text-xs font-bold text-gray-800 dark:text-white" x-text="order.receipt_no"></span>
-                                                    <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" x-text="order.status"></span>
-                                                </div>
-                                                <p class="text-[11px] text-gray-400 mt-0.5">
-                                                    Cashier: <span class="font-medium text-gray-600 dark:text-gray-300" x-text="order.cashier"></span>
-                                                    &bull; <span x-text="order.time"></span>
-                                                </p>
-                                                <p class="text-[11px] text-gray-400 truncate" x-text="order.items.map(i => i.name + ' x' + i.quantity).join(', ')"></p>
-                                            </div>
-                                            <span class="ml-4 text-sm font-extrabold text-amber-600 dark:text-amber-400 shrink-0" x-text="'$' + order.total"></span>
-                                        </div>
-                                    </template>
-                                </div>
-                            </div>
-
-                            {{-- Quick summary sidebar --}}
-                            <div class="bg-white dark:bg-gray-900 p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800/80 flex flex-col space-y-5">
-                                <h3 class="font-bold text-gray-800 dark:text-white">Quick Summary</h3>
-                                <div class="space-y-4">
-                                    <div class="flex justify-between items-center text-sm">
-                                        <span class="text-gray-500">All-time orders</span>
-                                        <span class="font-bold text-gray-800 dark:text-white" x-text="totalOrders + ' orders'">{{ $totalOrders }} orders</span>
-                                    </div>
-                                    <div class="flex justify-between items-center text-sm">
-                                        <span class="text-gray-500">Today's orders</span>
-                                        <span class="font-bold text-amber-600" x-text="todayOrders + ' orders'">{{ $todayOrders }} orders</span>
-                                    </div>
-                                    <div class="flex justify-between items-center text-sm">
-                                        <span class="text-gray-500">Today's revenue</span>
-                                        <span class="font-bold text-green-600" x-text="'$' + todayRevenue">${{ number_format($todayRevenue, 2) }}</span>
-                                    </div>
-                                    <div class="flex justify-between items-center text-sm">
-                                        <span class="text-gray-500">All-time revenue</span>
-                                        <span class="font-bold text-purple-600" x-text="'$' + totalRevenue">${{ number_format($totalRevenue, 2) }}</span>
-                                    </div>
-                                </div>
-                                <div class="border-t border-dashed border-gray-200 dark:border-gray-800 pt-4">
-                                    <button @click="activeTab = 'orders'" class="w-full bg-amber-500 hover:bg-amber-600 text-white font-semibold py-2.5 rounded-xl text-xs transition shadow-sm">
-                                        View All Orders →
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- ---- TAB: ORDERS ---- --}}
-                    <div x-show="activeTab === 'orders'" x-cloak class="space-y-6">
-                        <div class="flex flex-wrap justify-between items-center gap-3">
-                            <div>
-                                <h1 class="text-2xl font-bold text-gray-800 dark:text-white">Order History</h1>
-                                <p class="text-xs text-gray-500 mt-0.5">All customer orders placed by cashiers</p>
-                            </div>
-                            <div class="flex items-center space-x-2 text-xs text-green-600 font-semibold bg-green-50 dark:bg-green-900/20 px-3 py-1.5 rounded-xl">
-                                <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse inline-block"></span>
-                                <span>Auto-refreshing</span>
-                            </div>
-                        </div>
-
-                        {{-- Summary bar --}}
-                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                            <div class="bg-white dark:bg-gray-900 p-4 rounded-2xl border border-gray-200 dark:border-gray-800 text-center">
-                                <p class="text-xs text-gray-500 uppercase tracking-wider">Total Orders</p>
-                                <p class="text-2xl font-extrabold text-gray-800 dark:text-white mt-1" x-text="totalOrders">{{ $totalOrders }}</p>
-                            </div>
-                            <div class="bg-white dark:bg-gray-900 p-4 rounded-2xl border border-gray-200 dark:border-gray-800 text-center">
-                                <p class="text-xs text-gray-500 uppercase tracking-wider">Today's Orders</p>
-                                <p class="text-2xl font-extrabold text-amber-600 mt-1" x-text="todayOrders">{{ $todayOrders }}</p>
-                            </div>
-                            <div class="bg-white dark:bg-gray-900 p-4 rounded-2xl border border-gray-200 dark:border-gray-800 text-center">
-                                <p class="text-xs text-gray-500 uppercase tracking-wider">Today Revenue</p>
-                                <p class="text-2xl font-extrabold text-green-600 mt-1" x-text="'$' + todayRevenue">${{ number_format($todayRevenue, 2) }}</p>
-                            </div>
-                            <div class="bg-white dark:bg-gray-900 p-4 rounded-2xl border border-gray-200 dark:border-gray-800 text-center">
-                                <p class="text-xs text-gray-500 uppercase tracking-wider">All-Time Revenue</p>
-                                <p class="text-2xl font-extrabold text-purple-600 mt-1" x-text="'$' + totalRevenue">${{ number_format($totalRevenue, 2) }}</p>
-                            </div>
-                        </div>
-
-                        {{-- Order table --}}
-                        <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
-                            <template x-if="recentOrders.length === 0">
-                                <div class="flex flex-col items-center justify-center py-16 text-gray-400">
-                                    <svg class="w-12 h-12 mb-3 opacity-25" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
-                                    <p class="text-sm font-medium">No orders recorded yet</p>
-                                    <p class="text-xs mt-1 text-gray-300">Orders from cashiers will appear here</p>
-                                </div>
-                            </template>
-
-                            <div class="overflow-x-auto">
-                                <table class="min-w-full divide-y divide-gray-100 dark:divide-gray-800 text-sm" x-show="recentOrders.length > 0">
-                                    <thead class="bg-gray-50 dark:bg-gray-950 text-xs text-gray-500 uppercase tracking-wider">
-                                        <tr>
-                                            <th class="px-6 py-4 text-left">Receipt</th>
-                                            <th class="px-6 py-4 text-left">Cashier</th>
-                                            <th class="px-6 py-4 text-left">Items</th>
-                                            <th class="px-6 py-4 text-left">Time</th>
-                                            <th class="px-6 py-4 text-left">Status</th>
-                                            <th class="px-6 py-4 text-right">Total</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
-                                        <template x-for="order in recentOrders" :key="order.id">
-                                            <tr class="hover:bg-gray-50/60 dark:hover:bg-gray-800/30 transition">
-                                                <td class="px-6 py-3 font-mono text-xs font-bold text-gray-700 dark:text-gray-300" x-text="order.receipt_no"></td>
-                                                <td class="px-6 py-3 text-gray-700 dark:text-gray-300" x-text="order.cashier"></td>
-                                                <td class="px-6 py-3 text-gray-500 text-xs max-w-xs truncate" x-text="order.items.map(i => i.name + ' x' + i.quantity).join(', ')"></td>
-                                                <td class="px-6 py-3 text-gray-500 text-xs" x-text="order.time"></td>
-                                                <td class="px-6 py-3">
-                                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 capitalize" x-text="order.status"></span>
-                                                </td>
-                                                <td class="px-6 py-3 text-right font-extrabold text-amber-600 dark:text-amber-400" x-text="'$' + order.total"></td>
-                                            </tr>
-                                        </template>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- ---- TAB: PRODUCTS ---- --}}
-                    <div x-show="activeTab === 'products'" x-cloak class="space-y-6">
-                        <div>
-                            <h1 class="text-2xl font-bold text-gray-800 dark:text-white">Product Catalog</h1>
-                            <p class="text-xs text-gray-500 mt-0.5">View and filter items in store</p>
-                        </div>
-                        <div class="flex flex-col sm:flex-row gap-4 bg-white dark:bg-gray-900 p-4 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800">
-                            <div class="flex-1 relative">
-                                <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
-                                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                                </span>
-                                <input type="text" x-model="searchQuery" placeholder="Search products..."
-                                       class="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl text-sm focus:ring-amber-500 focus:border-amber-500 dark:text-white">
-                            </div>
-                            <div class="flex gap-2">
-                                <button @click="categoryFilter = 'all'" :class="categoryFilter==='all' ? 'bg-amber-500 text-white' : 'bg-gray-100 dark:bg-gray-950 text-gray-700 dark:text-gray-300'" class="px-4 py-2.5 rounded-xl text-sm font-medium transition">All</button>
-                                <button @click="categoryFilter = 'milktea'" :class="categoryFilter==='milktea' ? 'bg-amber-500 text-white' : 'bg-gray-100 dark:bg-gray-950 text-gray-700 dark:text-gray-300'" class="px-4 py-2.5 rounded-xl text-sm font-medium transition">Milk Tea</button>
-                                <button @click="categoryFilter = 'snack'" :class="categoryFilter==='snack' ? 'bg-amber-500 text-white' : 'bg-gray-100 dark:bg-gray-950 text-gray-700 dark:text-gray-300'" class="px-4 py-2.5 rounded-xl text-sm font-medium transition">Snacks</button>
-                            </div>
-                        </div>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                            <template x-for="product in filteredProducts" :key="product.id">
-                                <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden flex flex-col hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
-                                    {{-- Product Image --}}
-                                    <div class="relative h-44 w-full bg-gray-100 dark:bg-gray-800 overflow-hidden">
-                                        <template x-if="product.image">
-                                            <img :src="product.image" :alt="product.name"
-                                                 class="w-full h-full object-cover transition-transform duration-300 hover:scale-105">
-                                        </template>
-                                        <template x-if="!product.image">
-                                            <div class="w-full h-full flex items-center justify-center"
-                                                 :class="product.category === 'milktea' ? 'bg-gradient-to-br from-blue-100 to-indigo-200 dark:from-blue-900/40 dark:to-indigo-900/40' : 'bg-gradient-to-br from-amber-100 to-orange-200 dark:from-amber-900/40 dark:to-orange-900/40'">
-                                                <span class="text-4xl font-black opacity-30 text-gray-600 dark:text-gray-300" x-text="product.name.charAt(0)"></span>
-                                            </div>
-                                        </template>
-                                        <div class="absolute top-2 right-2">
-                                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase backdrop-blur-sm bg-white/80 dark:bg-gray-900/80"
-                                                  :class="product.category==='milktea' ? 'text-blue-700' : 'text-amber-700'"
-                                                  x-text="product.category==='milktea' ? 'Milk Tea' : 'Snack'"></span>
-                                        </div>
-                                    </div>
-                                    {{-- Product Info --}}
-                                    <div class="p-4 flex flex-col flex-1 justify-between">
-                                        <div>
-                                            <div class="flex justify-between items-start mb-1">
-                                                <h4 class="font-bold text-sm text-gray-900 dark:text-white" x-text="product.name"></h4>
-                                                <span class="text-sm font-bold text-amber-600 dark:text-amber-400 shrink-0 ml-2" x-text="'$' + parseFloat(product.price).toFixed(2)"></span>
-                                            </div>
-                                            <p class="text-xs text-gray-500 dark:text-gray-400 line-clamp-2" x-text="product.description"></p>
-                                        </div>
-                                        <div class="pt-3 border-t border-gray-100 dark:border-gray-800 mt-3 flex justify-between items-center">
-                                            <span class="text-xs text-gray-400">Stock:</span>
-                                            <span class="text-xs font-bold text-gray-700 dark:text-gray-300" x-text="stocks[product.id]"></span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </template>
-                        </div>
-                    </div>
-
-                    {{-- ---- TAB: STOCKS ---- --}}
-                    <div x-show="activeTab === 'stocks'" x-cloak class="space-y-6">
-                        <div>
-                            <h1 class="text-2xl font-bold text-gray-800 dark:text-white">Stock Management</h1>
-                            <p class="text-xs text-gray-500 mt-0.5">Monitor and adjust inventory levels</p>
-                        </div>
-                        <div class="bg-white dark:bg-gray-900 shadow-sm rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-800">
-                            <div class="overflow-x-auto">
-                                <table class="min-w-full divide-y divide-gray-100 dark:divide-gray-800 text-left text-sm">
-                                    <thead class="bg-gray-50 dark:bg-gray-950 text-xs text-gray-500 uppercase tracking-wider">
-                                        <tr>
-                                            <th class="px-6 py-4">Product</th>
-                                            <th class="px-6 py-4">Category</th>
-                                            <th class="px-6 py-4">Status</th>
-                                            <th class="px-6 py-4 text-center">Stock</th>
-                                            <th class="px-6 py-4 text-right">Adjust</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
-                                        @foreach($allProducts as $product)
-                                        <tr class="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition">
-                                            <td class="px-6 py-4">
-                                                <div class="font-semibold text-gray-900 dark:text-white">{{ $product->name }}</div>
-                                                <div class="text-xs text-gray-400">${{ number_format($product->price, 2) }}</div>
-                                            </td>
-                                            <td class="px-6 py-4">
-                                                <span class="px-2 py-1 rounded text-xs font-semibold uppercase {{ $product->category === 'milktea' ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400' : 'bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400' }}">
-                                                    {{ $product->category === 'milktea' ? 'Milk Tea' : 'Snack' }}
-                                                </span>
-                                            </td>
-                                            <td class="px-6 py-4">
-                                                <span x-show="stocks['{{ $product->id }}'] === 0" class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300">Out of Stock</span>
-                                                <span x-show="stocks['{{ $product->id }}'] > 0 && stocks['{{ $product->id }}'] < 10" class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">Low Stock</span>
-                                                <span x-show="stocks['{{ $product->id }}'] >= 10" class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300">In Stock</span>
-                                            </td>
-                                            <td class="px-6 py-4 text-center font-bold text-base" x-text="stocks['{{ $product->id }}']"></td>
-                                            <td class="px-6 py-4 text-right space-x-1">
-                                                <button @click="adjustStock('{{ $product->id }}', -5)" class="px-2 py-1 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 text-gray-700 dark:text-white rounded text-xs font-bold transition">-5</button>
-                                                <button @click="adjustStock('{{ $product->id }}', -1)" class="px-2 py-1 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 text-red-600 rounded text-xs font-bold transition">-1</button>
-                                                <button @click="adjustStock('{{ $product->id }}', 1)" class="px-2 py-1 bg-green-50 dark:bg-green-900/20 hover:bg-green-100 text-green-600 rounded text-xs font-bold transition">+1</button>
-                                                <button @click="adjustStock('{{ $product->id }}', 5)" class="px-2 py-1 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 text-gray-700 dark:text-white rounded text-xs font-bold transition">+5</button>
-                                            </td>
-                                        </tr>
-                                        @endforeach
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- ---- TAB: REPORTS ---- --}}
-                    <div x-show="activeTab === 'reports'" x-cloak class="space-y-6">
-                        <div>
-                            <h1 class="text-2xl font-bold text-gray-800 dark:text-white">Reports & Analytics</h1>
-                            <p class="text-xs text-gray-500 mt-0.5">Performance insights based on real order data</p>
-                        </div>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div class="bg-white dark:bg-gray-900 p-6 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm">
-                                <h3 class="font-bold text-gray-800 dark:text-white mb-5">Revenue Summary</h3>
-                                <div class="space-y-4">
-                                    <div>
-                                        <div class="flex justify-between text-sm mb-1">
-                                            <span class="text-gray-500 font-medium">Today's Revenue</span>
-                                            <span class="font-bold text-gray-800 dark:text-white" x-text="'$' + todayRevenue">${{ number_format($todayRevenue, 2) }}</span>
-                                        </div>
-                                        <div class="w-full bg-gray-100 dark:bg-gray-800 h-3 rounded-full overflow-hidden">
-                                            <div class="bg-green-500 h-full rounded-full transition-all" style="width: {{ $totalRevenue > 0 ? min(100, ($todayRevenue / max($totalRevenue, 1)) * 100) : 0 }}%"></div>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <div class="flex justify-between text-sm mb-1">
-                                            <span class="text-gray-500 font-medium">All-Time Revenue</span>
-                                            <span class="font-bold text-gray-800 dark:text-white" x-text="'$' + totalRevenue">${{ number_format($totalRevenue, 2) }}</span>
-                                        </div>
-                                        <div class="w-full bg-gray-100 dark:bg-gray-800 h-3 rounded-full overflow-hidden">
-                                            <div class="bg-purple-500 h-full rounded-full" style="width: 100%"></div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="bg-white dark:bg-gray-900 p-6 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm flex flex-col justify-between">
-                                <h3 class="font-bold text-gray-800 dark:text-white mb-4">Order Totals</h3>
-                                <div class="divide-y divide-gray-100 dark:divide-gray-800">
-                                    <div class="py-2.5 flex justify-between text-sm">
-                                        <span class="text-gray-500">All-Time Orders</span>
-                                        <span class="font-semibold text-gray-800 dark:text-white" x-text="totalOrders + ' orders'">{{ $totalOrders }} orders</span>
-                                    </div>
-                                    <div class="py-2.5 flex justify-between text-sm">
-                                        <span class="text-gray-500">Today's Orders</span>
-                                        <span class="font-semibold text-amber-600" x-text="todayOrders + ' orders'">{{ $todayOrders }} orders</span>
-                                    </div>
-                                    <div class="py-2.5 flex justify-between text-sm">
-                                        <span class="text-gray-500">All-Time Revenue</span>
-                                        <span class="font-semibold text-purple-600" x-text="'$' + totalRevenue">${{ number_format($totalRevenue, 2) }}</span>
-                                    </div>
-                                    <div class="py-2.5 flex justify-between text-sm">
-                                        <span class="text-gray-500">Today's Revenue</span>
-                                        <span class="font-semibold text-green-600" x-text="'$' + todayRevenue">${{ number_format($todayRevenue, 2) }}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    @include('admin.partials.tab-reports')
 
                 </div>
             </main>
@@ -1014,5 +655,6 @@
             </div>
         </div>
         @endif
+        @livewireScripts
     </body>
 </html>
