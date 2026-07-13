@@ -5,7 +5,7 @@
             {{-- Brand Header --}}
             <div class="text-center space-y-4">
                 <div class="inline-flex items-center justify-center w-24 h-24 rounded-full overflow-hidden border-2 border-yellow-400 shadow-lg mb-2">
-                    <img src="{{ asset('images/logo.png') }}" class="w-full h-full object-cover" alt="Coffee Shop Logo">
+                    <img src="{{ asset('images/logo.png') }}?v=1.0" class="w-full h-full object-cover" alt="Coffee Shop Logo">
                 </div>
                 <div>
                     <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Coffee Shop POS</h2>
