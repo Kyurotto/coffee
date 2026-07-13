@@ -17,7 +17,7 @@
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
-                    @foreach($allProducts as $product)
+                    @foreach($paginatedProducts as $product)
                     <tr class="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition"
                         x-data="{
                             inputVal: stocks['{{ $product->id }}'] ?? 0,
@@ -91,6 +91,9 @@
                     @endforeach
                 </tbody>
             </table>
+        </div>
+        <div class="px-6 py-4 border-t border-gray-100 dark:border-gray-800">
+            {{ $paginatedProducts->appends(['tab' => 'stocks'])->links() }}
         </div>
     </div>
 </div>

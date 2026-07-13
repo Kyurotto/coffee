@@ -23,7 +23,7 @@
         @if($role === 'admin')
         {{-- ==================== ADMIN VIEW ==================== --}}
         <div class="h-full flex flex-col md:flex-row overflow-hidden" x-data="{
-            activeTab: 'dashboard',
+            activeTab: '{{ request('tab', 'dashboard') }}',
             sidebarOpen: false,
             searchQuery: '',
             categoryFilter: 'all',
@@ -132,7 +132,10 @@
                     @endphp
 
                     @foreach($navItems as $nav)
-                    <button @click="activeTab = '{{ $nav['tab'] }}'; sidebarOpen = false"
+                    <button @click="activeTab = '{{ $nav['tab'] }}'; sidebarOpen = false;
+                                   const url = new URL(window.location);
+                                   url.searchParams.set('tab', '{{ $nav['tab'] }}');
+                                   window.history.pushState({}, '', url)"
                             :class="activeTab === '{{ $nav['tab'] }}' ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50'"
                             class="flex items-center space-x-3 w-full px-4 py-3 rounded-xl transition-all duration-200 font-medium text-sm">
                         <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">

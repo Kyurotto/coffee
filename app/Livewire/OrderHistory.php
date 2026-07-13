@@ -26,7 +26,7 @@ class OrderHistory extends Component
 
         $orders = Order::with('user', 'items')
             ->latest()
-            ->paginate(15);
+            ->paginate(10);
 
         return view('livewire.order-history', compact(
             'totalOrders',

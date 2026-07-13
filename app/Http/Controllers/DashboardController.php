@@ -30,6 +30,8 @@ class DashboardController extends Controller
                              ->limit(10)
                              ->get();
 
+        $paginatedProducts = Product::paginate(10);
+
         return view('dashboard', compact(
             'milkteas',
             'snacks',
@@ -37,7 +39,8 @@ class DashboardController extends Controller
             'totalRevenue',
             'todayRevenue',
             'todayOrders',
-            'recentOrders'
+            'recentOrders',
+            'paginatedProducts'
         ));
     }
 }
