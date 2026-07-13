@@ -67,6 +67,7 @@
                         price: {{ $product->price }},
                         category: '{{ $product->category }}',
                         image: '{{ $product->image_path ? Storage::url($product->image_path) : '' }}',
+                        is_new: {{ $product->created_at->gt(now()->subHours(24)) ? 'true' : 'false' }},
                     },
                     @endforeach
                 ];
@@ -143,16 +144,203 @@
                     @endforeach
                 </nav>
 
-                <div class="p-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50 flex flex-col space-y-3">
-                    <div class="flex items-center space-x-3 px-2">
-                        <div class="w-8 h-8 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center font-bold text-sm">
-                            {{ substr(Auth::user()->name, 0, 1) }}
-                        </div>
+                <div class="p-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50 flex flex-col space-y-3"
+                     x-data="{
+                        showProfile: false,
+                        saving: false,
+                        success: '',
+                        errors: {},
+                        form: {
+                            name: '{{ addslashes(Auth::user()->name) }}',
+                            email: '{{ addslashes(Auth::user()->email) }}',
+                            current_password: '',
+                            new_password: '',
+                            new_password_confirmation: ''
+                        },
+                        displayName: '{{ addslashes(Auth::user()->name) }}',
+                        displayEmail: '{{ addslashes(Auth::user()->email) }}',
+                        displayInitial: '{{ strtoupper(substr(Auth::user()->name, 0, 1)) }}',
+                        open() {
+                            this.form.name = this.displayName;
+                            this.form.email = this.displayEmail;
+                            this.form.current_password = '';
+                            this.form.new_password = '';
+                            this.form.new_password_confirmation = '';
+                            this.errors = {};
+                            this.success = '';
+                            this.showProfile = true;
+                        },
+                        async save() {
+                            this.saving = true;
+                            this.errors = {};
+                            this.success = '';
+                            try {
+                                const res = await fetch('{{ route('profile.ajax-update') }}', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+                                        'Accept': 'application/json'
+                                    },
+                                    body: JSON.stringify(this.form)
+                                });
+                                const data = await res.json();
+                                if (!res.ok) {
+                                    this.errors = data.errors || {};
+                                } else {
+                                    this.displayName    = data.name;
+                                    this.displayEmail   = data.email;
+                                    this.displayInitial = data.initial;
+                                    this.form.current_password = '';
+                                    this.form.new_password = '';
+                                    this.form.new_password_confirmation = '';
+                                    this.success = 'Profile updated successfully!';
+                                }
+                            } catch(e) {
+                                this.errors = { name: ['Something went wrong. Please try again.'] };
+                            }
+                            this.saving = false;
+                        }
+                     }">
+
+                    {{-- Clickable user card --}}
+                    <button type="button" @click="open()"
+                        class="flex items-center space-x-3 px-2 w-full rounded-xl py-2 hover:bg-amber-50 dark:hover:bg-amber-900/10 transition-all group cursor-pointer text-left">
+                        <div class="w-8 h-8 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center font-bold text-sm shrink-0 group-hover:bg-amber-500 group-hover:text-white transition-colors"
+                             x-text="displayInitial"></div>
                         <div class="flex-1 min-w-0">
-                            <p class="text-xs font-semibold text-gray-800 dark:text-white truncate">{{ Auth::user()->name }}</p>
-                            <p class="text-[10px] text-gray-500 dark:text-gray-400 truncate">{{ Auth::user()->email }}</p>
+                            <p class="text-xs font-semibold text-gray-800 dark:text-white truncate" x-text="displayName"></p>
+                            <p class="text-[10px] text-gray-500 dark:text-gray-400 truncate" x-text="displayEmail"></p>
                         </div>
-                    </div>
+                        <svg class="w-3.5 h-3.5 text-gray-400 group-hover:text-amber-500 transition-colors shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                        </svg>
+                    </button>
+
+                    {{-- Profile Edit Modal --}}
+                    <template x-teleport="body">
+                        <div x-show="showProfile" x-cloak
+                             class="fixed inset-0 z-50 flex items-center justify-center p-4"
+                             @keydown.escape.window="showProfile = false">
+
+                            {{-- Backdrop --}}
+                            <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="showProfile = false"></div>
+
+                            {{-- Panel --}}
+                            <div class="relative bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
+                                 @click.stop>
+
+                                {{-- Header --}}
+                                <div class="flex items-center justify-between px-6 py-5 border-b border-gray-100 dark:border-gray-800">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="w-10 h-10 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center font-bold text-base"
+                                             x-text="displayInitial"></div>
+                                        <div>
+                                            <h2 class="text-base font-bold text-gray-900 dark:text-white">Edit Profile</h2>
+                                            <p class="text-xs text-gray-500 dark:text-gray-400">Update your account information</p>
+                                        </div>
+                                    </div>
+                                    <button type="button" @click="showProfile = false"
+                                        class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors rounded-lg p-1 hover:bg-gray-100 dark:hover:bg-gray-800">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                        </svg>
+                                    </button>
+                                </div>
+
+                                {{-- Success banner --}}
+                                <div x-show="success" x-cloak
+                                     class="mx-6 mt-4 flex items-center space-x-2 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800 rounded-xl px-4 py-3 text-sm">
+                                    <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                    </svg>
+                                    <span x-text="success"></span>
+                                </div>
+
+                                {{-- Form --}}
+                                <div class="px-6 py-5 space-y-4">
+
+                                    {{-- Name --}}
+                                    <div>
+                                        <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Full Name</label>
+                                        <input type="text" x-model="form.name" placeholder="Your name"
+                                            :class="errors.name ? 'border-red-400 dark:border-red-500' : 'border-gray-200 dark:border-gray-700'"
+                                            class="w-full px-4 py-2.5 text-sm bg-gray-50 dark:bg-gray-800 border rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition">
+                                        <p x-show="errors.name" x-text="errors.name && errors.name[0]" class="mt-1 text-xs text-red-500"></p>
+                                    </div>
+
+                                    {{-- Email --}}
+                                    <div>
+                                        <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Email Address</label>
+                                        <input type="email" x-model="form.email" placeholder="you@example.com"
+                                            :class="errors.email ? 'border-red-400 dark:border-red-500' : 'border-gray-200 dark:border-gray-700'"
+                                            class="w-full px-4 py-2.5 text-sm bg-gray-50 dark:bg-gray-800 border rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition">
+                                        <p x-show="errors.email" x-text="errors.email && errors.email[0]" class="mt-1 text-xs text-red-500"></p>
+                                    </div>
+
+                                    {{-- Divider --}}
+                                    <div class="relative py-1">
+                                        <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-gray-100 dark:border-gray-800"></div></div>
+                                        <div class="relative flex justify-center">
+                                            <span class="bg-white dark:bg-gray-900 px-3 text-[10px] font-semibold uppercase tracking-wider text-gray-400">Change Password <span class="font-normal normal-case">(optional)</span></span>
+                                        </div>
+                                    </div>
+
+                                    {{-- Current Password --}}
+                                    <div>
+                                        <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Current Password</label>
+                                        <input type="password" x-model="form.current_password" placeholder="Enter current password" autocomplete="current-password"
+                                            :class="errors.current_password ? 'border-red-400 dark:border-red-500' : 'border-gray-200 dark:border-gray-700'"
+                                            class="w-full px-4 py-2.5 text-sm bg-gray-50 dark:bg-gray-800 border rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition">
+                                        <p x-show="errors.current_password" x-text="errors.current_password && errors.current_password[0]" class="mt-1 text-xs text-red-500"></p>
+                                    </div>
+
+                                    {{-- New Password --}}
+                                    <div>
+                                        <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">New Password</label>
+                                        <input type="password" x-model="form.new_password" placeholder="Min. 8 characters" autocomplete="new-password"
+                                            :class="errors.new_password ? 'border-red-400 dark:border-red-500' : 'border-gray-200 dark:border-gray-700'"
+                                            class="w-full px-4 py-2.5 text-sm bg-gray-50 dark:bg-gray-800 border rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition">
+                                        <p x-show="errors.new_password" x-text="errors.new_password && errors.new_password[0]" class="mt-1 text-xs text-red-500"></p>
+                                    </div>
+
+                                    {{-- Confirm New Password --}}
+                                    <div>
+                                        <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Confirm New Password</label>
+                                        <input type="password" x-model="form.new_password_confirmation" placeholder="Repeat new password" autocomplete="new-password"
+                                            :class="errors.new_password_confirmation ? 'border-red-400 dark:border-red-500' : 'border-gray-200 dark:border-gray-700'"
+                                            class="w-full px-4 py-2.5 text-sm bg-gray-50 dark:bg-gray-800 border rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition">
+                                        <p x-show="errors.new_password_confirmation" x-text="errors.new_password_confirmation && errors.new_password_confirmation[0]" class="mt-1 text-xs text-red-500"></p>
+                                    </div>
+
+                                    {{-- Actions --}}
+                                    <div class="flex items-center space-x-3 pt-1">
+                                        <button type="button" @click="showProfile = false"
+                                            class="flex-1 px-4 py-2.5 text-sm font-semibold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-xl transition-all">
+                                            Cancel
+                                        </button>
+                                        <button type="button" @click="save()" :disabled="saving"
+                                            :class="saving ? 'opacity-70 cursor-not-allowed' : ''"
+                                            class="flex-1 px-4 py-2.5 text-sm font-semibold text-white bg-amber-500 hover:bg-amber-600 rounded-xl shadow-lg shadow-amber-500/25 transition-all flex items-center justify-center space-x-2">
+                                            <template x-if="!saving">
+                                                <span>Save Changes</span>
+                                            </template>
+                                            <template x-if="saving">
+                                                <span class="flex items-center space-x-2">
+                                                    <svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                                                    </svg>
+                                                    <span>Saving…</span>
+                                                </span>
+                                            </template>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+
                     <form method="POST" action="{{ route('logout') }}" class="w-full">
                         @csrf
                         <button type="submit" class="w-full flex items-center justify-center space-x-2 px-4 py-2.5 bg-red-50 hover:bg-red-100 dark:bg-red-950/20 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 rounded-xl text-xs font-semibold transition-all">
@@ -204,6 +392,7 @@
                     price: {{ $product->price }},
                     category: '{{ $product->category }}',
                     image: '{{ $product->image_path ? Storage::url($product->image_path) : '' }}',
+                    is_new: {{ $product->created_at->gt(now()->subHours(24)) ? 'true' : 'false' }},
                 },
                 @endforeach
             ],
@@ -288,6 +477,36 @@
                         this.$nextTick(() => this.generateQR(val));
                     }
                 });
+                // Poll for new/updated products every 30 seconds
+                this.pollProducts();
+                setInterval(() => this.pollProducts(), 30000);
+            },
+            async pollProducts() {
+                try {
+                    const res = await fetch('{{ route('products.index') }}', {
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content
+                        }
+                    });
+                    if (!res.ok) return;
+                    const data = await res.json();
+                    if (!data.products) return;
+                    // Merge: add new products, update existing ones
+                    data.products.forEach(p => {
+                        const idx = this.products.findIndex(x => x.id === p.id);
+                        if (idx === -1) {
+                            // Newly added product — prepend it
+                            this.products.unshift(p);
+                        } else {
+                            // Update existing (name/price/image may have changed)
+                            this.products[idx] = p;
+                        }
+                    });
+                    // Remove deleted products
+                    const ids = data.products.map(p => p.id);
+                    this.products = this.products.filter(p => ids.includes(p.id));
+                } catch(e) { /* silent — no network disruption to UX */ }
             },
             generateQR(method) {
                 const el = document.getElementById('qr-payment-box');
@@ -384,6 +603,15 @@
                                               :class="product.category==='milktea' ? 'text-blue-700' : 'text-amber-700'"
                                               x-text="product.category==='milktea' ? 'Tea' : 'Snack'"></span>
                                     </div>
+                                    {{-- NEW badge (pulsing) --}}
+                                    <template x-if="product.is_new">
+                                        <div class="absolute top-1.5 right-1.5">
+                                            <span class="relative inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-green-500 text-white shadow">
+                                                <span class="absolute inset-0 rounded animate-ping bg-green-400 opacity-60"></span>
+                                                <span class="relative">NEW</span>
+                                            </span>
+                                        </div>
+                                    </template>
                                     {{-- Add indicator --}}
                                     <div class="absolute inset-0 bg-amber-500/0 group-hover:bg-amber-500/10 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
                                         <div class="bg-amber-500 text-white rounded-full w-9 h-9 flex items-center justify-center shadow-lg">
