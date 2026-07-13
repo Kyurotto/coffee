@@ -5,7 +5,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
         <title>{{ config('app.name', 'Laravel Coffee') }}</title>
-        <link rel="icon" type="image/png" href="{{ asset('images/logo.png') }}">
+        <link rel="icon" type="image/png" href="{{ asset('images/logo.png') }}?v=1.0">
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700&display=swap" rel="stylesheet" />
         @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -124,7 +124,7 @@
             <header class="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-6 py-4 md:hidden shrink-0 print:hidden">
                 <div class="flex items-center space-x-2">
                     <div class="w-8 h-8 rounded-full overflow-hidden border border-yellow-400 shrink-0">
-                        <img src="{{ asset('images/logo.png') }}" class="w-full h-full object-cover" alt="Coffee Logo">
+                        <img src="{{ asset('images/logo.png') }}?v=1.0" class="w-full h-full object-cover" alt="Coffee Logo">
                     </div>
                     <span class="text-base font-bold text-gray-800 dark:text-white">Coffee Admin</span>
                 </div>
@@ -145,7 +145,7 @@
                 <div class="p-6 border-b border-gray-100 dark:border-gray-800 hidden md:block">
                     <div class="flex items-center space-x-3">
                         <div class="w-10 h-10 rounded-full overflow-hidden border border-yellow-400 shrink-0">
-                            <img src="{{ asset('images/logo.png') }}" class="w-full h-full object-cover" alt="Coffee Logo">
+                            <img src="{{ asset('images/logo.png') }}?v=1.0" class="w-full h-full object-cover" alt="Coffee Logo">
                         </div>
                         <div>
                             <h2 class="text-base font-bold text-gray-800 dark:text-white">Coffee Admin</h2>
