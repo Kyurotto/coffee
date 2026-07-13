@@ -208,9 +208,39 @@
                         </div>
                         <p class="text-xs text-gray-500 dark:text-gray-400 line-clamp-2" x-text="product.description"></p>
                     </div>
-                    <div class="pt-3 border-t border-gray-100 dark:border-gray-800 mt-3 flex justify-between items-center">
-                        <span class="text-xs text-gray-400">Stock:</span>
-                        <span class="text-xs font-bold text-gray-700 dark:text-gray-300" x-text="stocks[product.id] ?? 0"></span>
+                    <div class="pt-3 border-t border-gray-100 dark:border-gray-800 mt-3"
+                         x-data="{
+                            inputVal: stocks[product.id] ?? stocks[String(product.id)] ?? 0,
+                            saved: false,
+                            update() {
+                                const val = parseInt(this.inputVal);
+                                if (isNaN(val) || val < 0) { this.inputVal = stocks[product.id] ?? stocks[String(product.id)] ?? 0; return; }
+                                setStock(String(product.id), val);
+                                this.saved = true;
+                                setTimeout(() => this.saved = false, 1500);
+                            }
+                         }">
+                        <div class="flex items-center justify-between gap-2">
+                            <span class="text-xs text-gray-400 shrink-0">Stock:</span>
+                            <div class="flex items-center gap-1.5">
+                                <input
+                                    type="number"
+                                    x-model.number="inputVal"
+                                    min="0"
+                                    step="1"
+                                    @keydown.enter="update()"
+                                    @click.stop
+                                    class="w-16 px-2 py-1 text-xs text-center font-bold bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition"
+                                    placeholder="0"
+                                >
+                                <button
+                                    @click.stop="update()"
+                                    :class="saved ? 'bg-green-500 text-white' : 'bg-amber-500 hover:bg-amber-600 text-white'"
+                                    class="px-2 py-1 rounded-lg text-[10px] font-semibold transition-all active:scale-95 shrink-0">
+                                    <span x-text="saved ? '✓' : 'Set'"></span>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

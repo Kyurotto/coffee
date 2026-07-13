@@ -41,8 +41,10 @@
                 @endforeach
             },
 
-            adjustStock(id, amount) {
-                this.stocks[id] = Math.max(0, this.stocks[id] + amount);
+            setStock(id, value) {
+                const val = parseInt(value);
+                if (isNaN(val) || val < 0) return;
+                this.stocks[id] = val;
             },
 
             // Livewire broadcasts stats-refreshed after each poll so the sidebar
