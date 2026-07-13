@@ -4,9 +4,12 @@ namespace App\Livewire;
 
 use App\Models\Order;
 use Livewire\Component;
+use Livewire\WithPagination;
 
 class OrderHistory extends Component
 {
+    use WithPagination;
+
     public function render()
     {
         $totalOrders  = Order::count();
@@ -23,8 +26,7 @@ class OrderHistory extends Component
 
         $orders = Order::with('user', 'items')
             ->latest()
-            ->limit(50)
-            ->get();
+            ->paginate(15);
 
         return view('livewire.order-history', compact(
             'totalOrders',
