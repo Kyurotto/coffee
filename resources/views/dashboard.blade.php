@@ -9,6 +9,43 @@
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700&display=swap" rel="stylesheet" />
         @vite(['resources/css/app.css', 'resources/js/app.js'])
         <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+        <style>
+            @media print {
+                /* Hide everything by default */
+                body * {
+                    visibility: hidden;
+                }
+                /* Show the receipt and all its descendants */
+                .print-receipt, .print-receipt * {
+                    visibility: visible !important;
+                }
+                /* Reset page setup and styling for the receipt */
+                .print-receipt {
+                    position: absolute !important;
+                    left: 0 !important;
+                    top: 0 !important;
+                    width: 100% !important;
+                    max-width: 100% !important;
+                    margin: 0 !important;
+                    padding: 10px !important;
+                    border: none !important;
+                    box-shadow: none !important;
+                    background: white !important;
+                    color: #000000 !important;
+                }
+                /* Force parent elements to not clip or collapse */
+                html, body, main, div {
+                    height: auto !important;
+                    overflow: visible !important;
+                    max-height: none !important;
+                }
+                /* Explicitly hide non-printable elements */
+                .no-print, .no-print * {
+                    display: none !important;
+                    visibility: hidden !important;
+                }
+            }
+        </style>
 
         @livewireStyles
 
@@ -464,6 +501,7 @@
                         this.cart = [];
                         this.selectedPayment = '';
                         this.showReceiptModal = true;
+                        this.generateReceiptQR();
                     } else {
                         this.errorMessage = data.message || 'Something went wrong. Please try again.';
                     }
@@ -475,6 +513,8 @@
             },
             paymentQRData: {
                 online: 'https://pay.coffeeshop.com/checkout',
+                gcash:  'https://pay.coffeeshop.com/gcash',
+                maya:   'https://pay.coffeeshop.com/maya',
             },
             init() {
                 this.$watch('selectedPayment', (val) => {
@@ -533,8 +573,25 @@
                 const labels = {
                     physical: 'Cash Payment',
                     online:   'Online Payment',
+                    gcash:    'GCash',
+                    maya:     'Maya',
                 };
                 return labels[method] || method;
+            },
+            generateReceiptQR() {
+                this.$nextTick(() => {
+                    const el = document.getElementById('qr-receipt-box');
+                    if (!el || !this.lastOrderReceipt) return;
+                    el.innerHTML = '';
+                    new QRCode(el, {
+                        text: this.lastOrderReceipt.receipt_no,
+                        width: 80,
+                        height: 80,
+                        colorDark: '#000000',
+                        colorLight: '#ffffff',
+                        correctLevel: QRCode.CorrectLevel.M
+                    });
+                });
             }
         }">
 
@@ -778,9 +835,9 @@
 
                     </div>
 
-                    {{-- QR Code Panel (online only) --}}
-                    <div x-show="selectedPayment === 'online'"
-                         x-effect="if (selectedPayment === 'online') { $nextTick(() => generateQR(selectedPayment)); }"
+                    {{-- QR Code Panel (online/gcash/maya) --}}
+                    <div x-show="selectedPayment === 'online' || selectedPayment === 'gcash' || selectedPayment === 'maya'"
+                         x-effect="if (selectedPayment === 'online' || selectedPayment === 'gcash' || selectedPayment === 'maya') { $nextTick(() => generateQR(selectedPayment)); }"
                          class="mb-5 rounded-2xl border border-dashed border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30 p-4 text-center">
 
                         {{-- Header --}}
@@ -827,8 +884,8 @@
             {{-- Receipt Modal --}}
             <div x-show="showReceiptModal" x-cloak
                  class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-60">
-                <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl p-6 max-w-sm w-full shadow-2xl" @click.away="showReceiptModal = false">
-                    <div class="text-center pb-4 border-b border-dashed border-gray-200 dark:border-gray-700">
+                <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl p-6 max-w-sm w-full shadow-2xl print-receipt" @click.away="showReceiptModal = false">
+                    <div class="text-center pb-4 border-b border-dashed border-gray-200 dark:border-gray-700 no-print">
                         <div class="w-12 h-12 rounded-full bg-green-500/10 text-green-500 flex items-center justify-center mx-auto mb-2.5">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                         </div>
@@ -849,8 +906,8 @@
                             <span class="text-gray-400">Payment</span>
                             <span class="font-bold capitalize"
                                   :class="{
-                                      'text-green-600 dark:text-green-400': lastOrderReceipt?.payment_method === 'physical',
-                                      'text-blue-600 dark:text-blue-400':   lastOrderReceipt?.payment_method === 'online',
+                                      'text-green-600 dark:text-green-400': lastOrderReceipt?.payment_method === 'physical' || lastOrderReceipt?.payment_method === 'maya',
+                                      'text-blue-600 dark:text-blue-400':   lastOrderReceipt?.payment_method === 'online' || lastOrderReceipt?.payment_method === 'gcash',
                                   }"
                                   x-text="paymentLabel(lastOrderReceipt?.payment_method)"></span>
                         </div>
@@ -878,12 +935,25 @@
                                 <span class="text-amber-600 dark:text-amber-400" x-text="'$' + lastOrderReceipt?.total"></span>
                             </div>
                         </div>
+
+                        {{-- QR Code below Total Paid --}}
+                        <div class="flex flex-col items-center justify-center pt-4 border-t border-dashed border-gray-200 dark:border-gray-700">
+                            <div id="qr-receipt-box" class="flex justify-center items-center p-2 bg-white rounded-xl"></div>
+                            <span class="text-[9px] text-gray-400 mt-1 uppercase tracking-wider font-semibold font-mono">Scan receipt to verify</span>
+                        </div>
                     </div>
 
-                    <button @click="showReceiptModal = false"
-                            class="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 rounded-xl text-sm transition shadow-lg shadow-amber-500/10">
-                        Start New Order
-                    </button>
+                    <div class="mt-4 flex space-x-3 no-print">
+                        <button @click="window.print()"
+                                class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl text-sm transition shadow-lg shadow-blue-600/10 flex items-center justify-center space-x-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h8z"/></svg>
+                            <span>Print</span>
+                        </button>
+                        <button @click="showReceiptModal = false"
+                                class="flex-1 bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 rounded-xl text-sm transition shadow-lg shadow-amber-500/10">
+                            New Order
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
