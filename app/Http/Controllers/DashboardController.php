@@ -13,8 +13,8 @@ class DashboardController extends Controller
      */
     public function index()
     {
-        $milkteas = Product::where('category', 'milktea')->get();
-        $snacks   = Product::where('category', 'snack')->get();
+        $milkteas = Product::where('category', 'milktea')->latest()->get();
+        $snacks   = Product::where('category', 'snack')->latest()->get();
 
         // Pre-compute admin order stats to render server-side into the view.
         // The admin dashboard also polls /orders/summary via JS for live updates.
