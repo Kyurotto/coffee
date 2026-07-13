@@ -415,7 +415,8 @@
 
         @else
         {{-- ==================== EMPLOYEE POS VIEW ==================== --}}
-        <div class="h-full flex flex-col overflow-hidden" x-data="{
+        <div class="h-full flex flex-col md:flex-row overflow-hidden" x-data="{
+            sidebarOpen: false,
             searchQuery: '',
             categoryFilter: 'all',
             cart: [],
@@ -595,57 +596,72 @@
             }
         }">
 
-            {{-- POS Header --}}
-            <header class="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-6 py-4 shrink-0">
-                <div class="flex items-center space-x-3">
-                    <div class="bg-amber-500 p-2 rounded-xl text-white">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m0-12.728l.707.707m11.314 11.314l.707-.707M12 5a7 7 0 100 14 7 7 0 000-14z"/>
-                        </svg>
-                    </div>
-                    <div>
-                        <h1 class="text-lg font-bold text-gray-800 dark:text-white">Coffee POS</h1>
-                        <p class="text-xs text-gray-500">Cashier: <span class="font-semibold text-gray-700 dark:text-gray-300">{{ Auth::user()->name }}</span></p>
-                    </div>
-                </div>
-                <div class="flex items-center space-x-3">
-                    <span class="text-xs text-gray-500 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-3 py-1.5 rounded-xl font-medium hidden sm:inline-block">{{ now()->format('F d, Y') }}</span>
-                    <form method="POST" action="{{ route('logout') }}">
+            {{-- Mobile top bar --}}
+            <header class="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex items-center justify-end px-6 py-4 md:hidden shrink-0 print:hidden">
+                <button @click="sidebarOpen = !sidebarOpen" class="text-gray-500 dark:text-gray-400 focus:outline-none">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                    </svg>
+                </button>
+            </header>
+
+            {{-- Mobile overlay --}}
+            <div x-show="sidebarOpen" x-cloak @click="sidebarOpen = false"
+                 class="fixed inset-0 z-20 bg-black bg-opacity-50 md:hidden"></div>
+
+            {{-- Sidebar --}}
+            <aside :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'"
+                   class="fixed md:static inset-y-0 left-0 z-30 w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col transition-transform duration-300 ease-in-out shrink-0 h-full print:hidden">
+
+                {{-- Category Navigation in Sidebar --}}
+                <nav class="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto">
+                    <p class="text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-2 px-1 font-sans">Categories</p>
+
+                    {{-- Milk Tea --}}
+                    <button @click="categoryFilter = 'milktea'; sidebarOpen = false;"
+                            :class="categoryFilter === 'milktea' ? 'bg-yellow-400 text-red-950 shadow-xl shadow-yellow-400/30 border-2 border-yellow-400' : 'bg-white dark:bg-gray-900 border-2 border-gray-100 dark:border-gray-800 text-gray-700 dark:text-gray-300 hover:border-yellow-400 hover:shadow-lg'"
+                            class="flex flex-col items-center justify-center text-center w-full p-4 rounded-3xl transition-all duration-300 transform active:scale-95 mb-4 group">
+                        <div class="w-20 h-20 rounded-full overflow-hidden border-2 border-yellow-400 shadow-md mb-3 shrink-0 group-hover:scale-105 transition-transform duration-300">
+                            <img src="{{ asset('images/categories/milktea.png') }}" class="w-full h-full object-cover" alt="Milk Tea">
+                        </div>
+                        <span class="font-extrabold text-sm tracking-wide">Milk Tea</span>
+                    </button>
+
+                    {{-- Snacks --}}
+                    <button @click="categoryFilter = 'snack'; sidebarOpen = false;"
+                            :class="categoryFilter === 'snack' ? 'bg-yellow-400 text-red-950 shadow-xl shadow-yellow-400/30 border-2 border-yellow-400' : 'bg-white dark:bg-gray-900 border-2 border-gray-100 dark:border-gray-800 text-gray-700 dark:text-gray-300 hover:border-yellow-400 hover:shadow-lg'"
+                            class="flex flex-col items-center justify-center text-center w-full p-4 rounded-3xl transition-all duration-300 transform active:scale-95 group">
+                        <div class="w-20 h-20 rounded-full overflow-hidden border-2 border-yellow-400 shadow-md mb-3 shrink-0 group-hover:scale-105 transition-transform duration-300">
+                            <img src="{{ asset('images/categories/snacks.png') }}" class="w-full h-full object-cover" alt="Snacks">
+                        </div>
+                        <span class="font-extrabold text-sm tracking-wide">Snacks</span>
+                    </button>
+                </nav>
+
+                <div class="mt-auto p-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/30">
+                    <form method="POST" action="{{ route('logout') }}" class="w-full">
                         @csrf
-                        <button type="submit" class="flex items-center space-x-2 px-4 py-2.5 bg-red-50 hover:bg-red-100 dark:bg-red-950/20 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 rounded-xl text-xs font-semibold transition-all">
+                        <button type="submit" class="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-red-50 hover:bg-red-100 dark:bg-red-950/20 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 rounded-2xl text-xs font-bold transition-all">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
                             <span>Log Out</span>
                         </button>
                     </form>
                 </div>
-            </header>
+            </aside>
+
+            {{-- Main content --}}
+            <main class="flex-1 h-full flex flex-col overflow-hidden bg-gray-50 dark:bg-gray-950">
 
             {{-- Body --}}
             <div class="flex-1 flex flex-col lg:flex-row overflow-hidden">
 
                 {{-- Product catalog --}}
                 <div class="flex-1 p-4 md:p-6 overflow-y-auto space-y-5">
-                    {{-- Search & filters --}}
-                    <div class="flex flex-col sm:flex-row gap-4 bg-white dark:bg-gray-900 p-4 rounded-2xl border border-gray-200 dark:border-gray-800">
-                        <div class="flex-1 relative">
-                            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
-                                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                            </span>
-                            <input type="text" x-model="searchQuery" placeholder="Search products..."
-                                   class="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl text-sm focus:ring-amber-500 focus:border-amber-500 dark:text-white">
-                        </div>
-                        <div class="flex gap-2">
-                            <button @click="categoryFilter = 'all'" :class="categoryFilter==='all' ? 'bg-amber-500 text-white' : 'bg-gray-100 dark:bg-gray-950 text-gray-700 dark:text-gray-300'" class="px-4 py-2.5 rounded-xl text-sm font-medium transition">All</button>
-                            <button @click="categoryFilter = 'milktea'" :class="categoryFilter==='milktea' ? 'bg-amber-500 text-white' : 'bg-gray-100 dark:bg-gray-950 text-gray-700 dark:text-gray-300'" class="px-4 py-2.5 rounded-xl text-sm font-medium transition">Milk Tea</button>
-                            <button @click="categoryFilter = 'snack'" :class="categoryFilter==='snack' ? 'bg-amber-500 text-white' : 'bg-gray-100 dark:bg-gray-950 text-gray-700 dark:text-gray-300'" class="px-4 py-2.5 rounded-xl text-sm font-medium transition">Snacks</button>
-                        </div>
-                    </div>
-
                     {{-- Product grid --}}
                     <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4">
                         <template x-for="product in filteredProducts" :key="product.id">
                             <div @click="addToCart(product)"
-                                 class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl overflow-hidden flex flex-col cursor-pointer hover:border-amber-500 hover:shadow-lg active:scale-95 transition-all select-none group">
+                                 class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl overflow-hidden flex flex-col cursor-pointer hover:border-yellow-400 hover:shadow-lg active:scale-95 transition-all select-none group">
 
                                 {{-- Product photo --}}
                                 <div class="relative h-36 w-full overflow-hidden bg-gray-100 dark:bg-gray-800 shrink-0">
@@ -655,28 +671,28 @@
                                     </template>
                                     <template x-if="!product.image">
                                         <div class="w-full h-full flex items-center justify-center"
-                                             :class="product.category === 'milktea' ? 'bg-gradient-to-br from-blue-100 to-indigo-200 dark:from-blue-900/40 dark:to-indigo-900/40' : 'bg-gradient-to-br from-amber-100 to-orange-200 dark:from-amber-900/40 dark:to-orange-900/40'">
+                                             :class="product.category === 'milktea' ? 'bg-gradient-to-br from-blue-100 to-indigo-200 dark:from-blue-900/40 dark:to-indigo-900/40' : 'bg-gradient-to-br from-yellow-100 to-yellow-50 dark:from-yellow-950/20 dark:to-yellow-900/20'">
                                             <span class="text-4xl font-black opacity-25 text-gray-700" x-text="product.name.charAt(0)"></span>
                                         </div>
                                     </template>
                                     {{-- Category badge --}}
                                     <div class="absolute top-1.5 left-1.5">
                                         <span class="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase backdrop-blur-sm bg-white/80 dark:bg-gray-900/80"
-                                              :class="product.category==='milktea' ? 'text-blue-700' : 'text-amber-700'"
+                                              :class="product.category==='milktea' ? 'text-blue-700' : 'text-yellow-600'"
                                               x-text="product.category==='milktea' ? 'Tea' : 'Snack'"></span>
                                     </div>
                                     {{-- NEW badge (pulsing) --}}
                                     <template x-if="product.is_new">
                                         <div class="absolute top-1.5 right-1.5">
-                                            <span class="relative inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-green-500 text-white shadow">
-                                                <span class="absolute inset-0 rounded animate-ping bg-green-400 opacity-60"></span>
+                                            <span class="relative inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-yellow-400 text-red-950 shadow">
+                                                <span class="absolute inset-0 rounded animate-ping bg-yellow-300 opacity-60"></span>
                                                 <span class="relative">NEW</span>
                                             </span>
                                         </div>
                                     </template>
                                     {{-- Add indicator --}}
-                                    <div class="absolute inset-0 bg-amber-500/0 group-hover:bg-amber-500/10 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
-                                        <div class="bg-amber-500 text-white rounded-full w-9 h-9 flex items-center justify-center shadow-lg">
+                                    <div class="absolute inset-0 bg-yellow-400/0 group-hover:bg-yellow-400/10 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                                        <div class="bg-yellow-400 text-red-950 rounded-full w-9 h-9 flex items-center justify-center shadow-lg">
                                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                                         </div>
                                     </div>
@@ -687,7 +703,7 @@
                                     <h3 class="font-bold text-xs text-gray-900 dark:text-white line-clamp-2 leading-tight" x-text="product.name"></h3>
                                     <p class="text-[10px] text-gray-400 line-clamp-1 mt-0.5" x-text="product.description"></p>
                                     <div class="mt-auto pt-2">
-                                        <span class="text-sm font-extrabold text-amber-600 dark:text-amber-400" x-text="'$' + parseFloat(product.price).toFixed(2)"></span>
+                                        <span class="text-sm font-extrabold text-yellow-600 dark:text-yellow-400" x-text="'$' + parseFloat(product.price).toFixed(2)"></span>
                                     </div>
                                 </div>
                             </div>
@@ -699,7 +715,7 @@
                 <div class="w-full lg:w-96 bg-white dark:bg-gray-900 border-t lg:border-t-0 lg:border-l border-gray-200 dark:border-gray-800 flex flex-col overflow-hidden shrink-0">
                     <div class="p-4 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
                         <span class="font-bold text-gray-800 dark:text-white">Current Order</span>
-                        <span class="bg-amber-500 text-white text-xs px-2.5 py-1 rounded-full font-bold" x-text="itemCount + (itemCount === 1 ? ' item' : ' items')">0 items</span>
+                        <span class="bg-yellow-400 text-red-950 text-xs px-2.5 py-1 rounded-full font-bold" x-text="itemCount + (itemCount === 1 ? ' item' : ' items')">0 items</span>
                     </div>
 
                     {{-- Error banner --}}
@@ -709,7 +725,7 @@
                     <div class="flex-1 overflow-y-auto p-4 space-y-3">
                         <template x-if="cart.length === 0">
                             <div class="h-full flex flex-col items-center justify-center text-center p-6 space-y-2">
-                                <div class="bg-amber-500/10 text-amber-500 p-4 rounded-full">
+                                <div class="bg-yellow-400/20 text-yellow-600 p-4 rounded-full">
                                     <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
                                     </svg>
@@ -723,7 +739,7 @@
                             <div class="flex items-center justify-between bg-gray-50 dark:bg-gray-950 p-3 rounded-xl border border-gray-100 dark:border-gray-800">
                                 <div class="flex-1 min-w-0 pr-2">
                                     <p class="text-xs font-bold text-gray-800 dark:text-white truncate" x-text="item.name"></p>
-                                    <p class="text-[11px] text-amber-600 font-extrabold mt-0.5" x-text="'$' + parseFloat(item.price).toFixed(2)"></p>
+                                    <p class="text-[11px] text-yellow-600 font-extrabold mt-0.5" x-text="'$' + parseFloat(item.price).toFixed(2)"></p>
                                 </div>
                                 <div class="flex items-center space-x-2">
                                     <div class="flex items-center bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-1">
@@ -752,12 +768,12 @@
                         </div>
                         <div class="flex justify-between text-sm font-extrabold border-t border-dashed border-gray-200 dark:border-gray-800 pt-2.5 text-gray-800 dark:text-white">
                             <span>Total</span>
-                            <span class="text-amber-600 dark:text-amber-400" x-text="'$' + parseFloat(total).toFixed(2)">$0.00</span>
+                            <span class="text-yellow-600 dark:text-yellow-400 font-black text-base" x-text="'$' + parseFloat(total).toFixed(2)">$0.00</span>
                         </div>
 
                         <button @click="if (cart.length > 0 && !isSubmitting) { showPaymentModal = true; }"
                                 :disabled="cart.length === 0 || isSubmitting"
-                                :class="cart.length === 0 || isSubmitting ? 'bg-gray-300 dark:bg-gray-800 text-gray-400 cursor-not-allowed' : 'bg-amber-500 hover:bg-amber-600 text-white shadow-lg shadow-amber-500/20 active:scale-[0.98]'"
+                                :class="cart.length === 0 || isSubmitting ? 'bg-gray-300 dark:bg-gray-800 text-gray-400 cursor-not-allowed' : 'bg-yellow-400 hover:bg-yellow-500 text-red-950 shadow-lg shadow-yellow-400/20 active:scale-[0.98]'"
                                 class="w-full mt-1 font-bold py-3 rounded-xl text-sm transition-all flex items-center justify-center space-x-2">
                             <template x-if="!isSubmitting">
                                 <span class="flex items-center space-x-2">
@@ -783,7 +799,7 @@
 
                     {{-- Header --}}
                     <div class="text-center pb-4 border-b border-dashed border-gray-200 dark:border-gray-700 mb-5">
-                        <div class="w-12 h-12 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center mx-auto mb-2.5">
+                        <div class="w-12 h-12 rounded-full bg-yellow-400/20 text-yellow-600 flex items-center justify-center mx-auto mb-2.5">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3-3V8a3 3 0 003 3z"/></svg>
                         </div>
                         <h3 class="font-extrabold text-gray-800 dark:text-white text-base">Select Payment Method</h3>
@@ -796,7 +812,7 @@
                         {{-- Section: Physical --}}
                         <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1">Physical Payment</p>
                         <button @click="selectedPayment = 'physical'"
-                                :class="selectedPayment === 'physical' ? 'ring-2 ring-amber-500 bg-amber-50 dark:bg-amber-900/20 border-amber-400' : 'border-gray-200 dark:border-gray-700 hover:border-amber-400'"
+                                :class="selectedPayment === 'physical' ? 'ring-2 ring-yellow-400 bg-yellow-50 dark:bg-yellow-950/20 border-yellow-400' : 'border-gray-200 dark:border-gray-700 hover:border-yellow-400'"
                                 class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl border transition-all text-left">
                             <div class="w-9 h-9 rounded-xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center shrink-0">
                                 <svg class="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -807,11 +823,11 @@
                                 <p class="text-sm font-bold text-gray-800 dark:text-white">Cash</p>
                                 <p class="text-[10px] text-gray-400">Physical cash payment</p>
                             </div>
-                            <div x-show="selectedPayment === 'physical'" class="w-5 h-5 rounded-full bg-amber-500 flex items-center justify-center">
-                                <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+                            <div x-show="selectedPayment === 'physical'" class="w-5 h-5 rounded-full bg-yellow-400 flex items-center justify-center">
+                                <svg class="w-3 h-3 text-red-950" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
                             </div>
                         </button>
-
+                        
                         {{-- Section: Online --}}
                         <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400 mt-4 mb-1">Online / E-Wallet</p>
 
@@ -832,27 +848,20 @@
                                 <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
                             </div>
                         </button>
-
                     </div>
 
-                    {{-- QR Code Panel (online/gcash/maya) --}}
+                    {{-- QR Code Panel --}}
                     <div x-show="selectedPayment === 'online' || selectedPayment === 'gcash' || selectedPayment === 'maya'"
                          x-effect="if (selectedPayment === 'online' || selectedPayment === 'gcash' || selectedPayment === 'maya') { $nextTick(() => generateQR(selectedPayment)); }"
                          class="mb-5 rounded-2xl border border-dashed border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30 p-4 text-center">
-
-                        {{-- Header --}}
                         <div class="flex items-center justify-center space-x-2 mb-3">
                             <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
                             <span class="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest">Scan QR to Pay</span>
                         </div>
-
-                        {{-- QR code rendered here by qrcodejs --}}
                         <div id="qr-payment-box" class="flex justify-center items-center min-h-[184px]"></div>
-
-                        {{-- Amount label --}}
                         <p class="mt-3 text-xs text-gray-400">
                             Amount to pay:
-                            <span class="font-extrabold text-amber-600 dark:text-amber-400"
+                            <span class="font-extrabold text-yellow-600 dark:text-yellow-400"
                                   x-text="'$' + parseFloat(total).toFixed(2)">$0.00</span>
                         </p>
                         <p class="text-[10px] text-gray-300 dark:text-gray-600 mt-1">Show QR to customer — click Confirm after payment</p>
@@ -861,7 +870,7 @@
                     {{-- Order total reminder --}}
                     <div class="flex justify-between items-center text-sm font-bold border-t border-dashed border-gray-200 dark:border-gray-700 pt-4 mb-4">
                         <span class="text-gray-500">Total to Collect</span>
-                        <span class="text-amber-600 dark:text-amber-400 text-base" x-text="'$' + parseFloat(total).toFixed(2)">$0.00</span>
+                        <span class="text-yellow-600 dark:text-yellow-400 text-base font-black" x-text="'$' + parseFloat(total).toFixed(2)">$0.00</span>
                     </div>
 
                     {{-- Action buttons --}}
@@ -872,7 +881,7 @@
                         </button>
                         <button @click="checkout()"
                                 :disabled="!selectedPayment"
-                                :class="!selectedPayment ? 'bg-gray-300 dark:bg-gray-800 text-gray-400 cursor-not-allowed' : 'bg-amber-500 hover:bg-amber-600 text-white shadow-lg shadow-amber-500/20 active:scale-[0.98]'"
+                                :class="!selectedPayment ? 'bg-gray-300 dark:bg-gray-800 text-gray-400 cursor-not-allowed' : 'bg-yellow-400 hover:bg-yellow-500 text-red-950 shadow-lg shadow-yellow-400/20 active:scale-[0.98]'"
                                 class="flex-1 py-3 rounded-xl text-sm font-bold transition-all flex items-center justify-center space-x-2">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                             <span>Confirm & Print</span>
@@ -880,6 +889,8 @@
                     </div>
                 </div>
             </div>
+
+            </main> {{-- End Main content --}}
 
             {{-- Receipt Modal --}}
             <div x-show="showReceiptModal" x-cloak
@@ -932,7 +943,7 @@
                             </div>
                             <div class="flex justify-between font-extrabold text-sm text-gray-800 dark:text-white pt-1">
                                 <span>Total Paid</span>
-                                <span class="text-amber-600 dark:text-amber-400" x-text="'$' + lastOrderReceipt?.total"></span>
+                                <span class="text-yellow-600 dark:text-yellow-400 font-black" x-text="'$' + lastOrderReceipt?.total"></span>
                             </div>
                         </div>
 
@@ -945,12 +956,12 @@
 
                     <div class="mt-4 flex space-x-3 no-print">
                         <button @click="window.print()"
-                                class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl text-sm transition shadow-lg shadow-blue-600/10 flex items-center justify-center space-x-2">
+                                class="flex-1 bg-yellow-400 hover:bg-yellow-500 text-yellow-950 font-bold py-3 rounded-xl text-sm transition shadow-lg shadow-yellow-400/20 flex items-center justify-center space-x-2">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h8z"/></svg>
                             <span>Print</span>
                         </button>
                         <button @click="showReceiptModal = false"
-                                class="flex-1 bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 rounded-xl text-sm transition shadow-lg shadow-amber-500/10">
+                                class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 dark:bg-gray-800 dark:hover:bg-gray-700 dark:text-white font-bold py-3 rounded-xl text-sm transition shadow-sm border border-gray-200 dark:border-gray-700">
                             New Order
                         </button>
                     </div>
